@@ -36,19 +36,30 @@ const createSendToken = (user, statusCode, req, res) => {
 };
 
 exports.signup = catchAsync(async (req, res, next) => {
-  const newUser = await User.create({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    passwordConfirm: req.body.passwordConfirm,
-    tokenExpiresIn: Date.now() + 20 * 1000
-  });
+  try {
+    const newUser = await User.create({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      passwordConfirm: req.body.passwordConfirm,
+      tokenExpiresIn: Date.now() + 20 * 1000
+    });
+    createSendToken(newUser, 201, req, res);
+  } catch (error) {
+    res.status(500).json({
+      status: 'fail',
+      data: {
+        message: error.message
+      }
+    });
+  }
+  
 
-  const url = `${req.protocol}://${req.get('host')}/me`;
+  //const url = `${req.protocol}://${req.get('host')}/me`;
   // console.log(url);
   //await email({newUser, url});
 
-  createSendToken(newUser, 201, req, res);
+  
 });
 
 exports.login = catchAsync(async (req, res, next) => {
@@ -57,7 +68,7 @@ exports.login = catchAsync(async (req, res, next) => {
   // 1) Check if email and password exist
   if (!email || !password) {
     //return next(new AppError('Please provide email and password!', 400));
-    return   res.status(400).json({
+    res.status(400).json({
       status: 'fail',
       data: {
         message: "Please provide email and password!"
@@ -69,7 +80,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
   if (!user || !(await user.correctPassword(password, user.password))) {
     //return next(new AppError('Incorrect email or password', 401));
-    return   res.status(401).json({
+    res.status(401).json({
       status: 'fail',
       data: {
         message: "Incorrect email or password"
